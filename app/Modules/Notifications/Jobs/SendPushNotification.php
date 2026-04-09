@@ -26,7 +26,7 @@ class SendPushNotification implements ShouldQueue
 
     public function handle(NotificationGatewayInterface $gateway): void
     {
-        $data = $this->notification->data;
+        $data = $this->notification->data ?? [];
 
         $success = $gateway->sendPush(
             deviceTokens: $this->recipient->device_tokens ?? [],
@@ -37,6 +37,7 @@ class SendPushNotification implements ShouldQueue
 
         if (! $success) {
             Log::warning('Push notification failed', ['notification_id' => $this->notification->id]);
+            throw new \RuntimeException('Push notification delivery failed — will retry');
         }
     }
 }

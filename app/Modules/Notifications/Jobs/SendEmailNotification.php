@@ -26,7 +26,7 @@ class SendEmailNotification implements ShouldQueue
 
     public function handle(NotificationGatewayInterface $gateway): void
     {
-        $data = $this->notification->data;
+        $data = $this->notification->data ?? [];
 
         $success = $gateway->sendEmail(
             to: $this->recipient->email,
@@ -41,6 +41,7 @@ class SendEmailNotification implements ShouldQueue
 
         if (! $success) {
             Log::warning('Email notification failed', ['notification_id' => $this->notification->id]);
+            throw new \RuntimeException('Email notification delivery failed — will retry');
         }
     }
 }
