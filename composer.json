@@ -28,6 +28,10 @@
     "autoload": {
         "psr-4": {
             "App\\": "app/",
+            "App\\Modules\\Auth\\": "app/Modules/Auth/",
+            "App\\Modules\\Users\\": "app/Modules/Users/",
+            "App\\Modules\\Chat\\": "app/Modules/Chat/",
+            "App\\Modules\\Notifications\\": "app/Modules/Notifications/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }
