@@ -2,4 +2,20 @@ type User {
     id: ID!
     name: String!
     email: String!
+    avatar_url: String
+    bio: String
+    is_online: Boolean!
+    last_seen_at: DateTime
+}
+
+extend type Query {
+    me: User! @guard @field(resolver: "App\\Modules\\Users\\GraphQL\\Queries\\MeQuery")
+    user(id: ID! @eq): User @find(model: "App\\Modules\\Users\\Models\\User") @guard
+    users: [User!]! @all(model: "App\\Modules\\Users\\Models\\User") @guard
+}
+
+extend type Subscription {
+    onUserPresenceChanged: User
+        @subscription(class: "App\\Modules\\Users\\GraphQL\\Subscriptions\\UserPresenceSubscription")
+        @guard
 }
