@@ -2,9 +2,16 @@
 
 namespace App\Modules\Notifications\Contracts;
 
-use App\Modules\Notifications\Models\AppNotification;
-
 interface NotificationGatewayInterface
 {
-    public function send(AppNotification $notification): void;
+    /**
+     * @param string[] $deviceTokens
+     * @param array<string, string> $data
+     */
+    public function sendPush(array $deviceTokens, string $title, string $body, array $data = []): bool;
+
+    /**
+     * @param array<string, string> $variables
+     */
+    public function sendEmail(string $to, string $subject, string $template, array $variables = []): bool;
 }

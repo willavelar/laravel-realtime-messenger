@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package notifications;
+
+option php_namespace = "App\\Modules\\Notifications\\gRPC\\Generated";
+option php_metadata_namespace = "App\\Modules\\Notifications\\gRPC\\Generated\\GPBMetadata";
+
+service NotificationService {
+  rpc SendPush(PushRequest) returns (PushResponse);
+  rpc SendEmail(EmailRequest) returns (EmailResponse);
+}
+
+message PushRequest {
+  repeated string device_tokens = 1;
+  string title = 2;
+  string body = 3;
+  map<string, string> data = 4;
+}
+
+message PushResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message EmailRequest {
+  string to = 1;
+  string subject = 2;
+  string template = 3;
+  map<string, string> variables = 4;
+}
+
+message EmailResponse {
+  bool success = 1;
+  string message = 2;
+}
