@@ -1,1 +1,33 @@
-# placeholder
+type AppNotification {
+    id: ID!
+    type: String!
+    data: String!
+    read_at: DateTime
+    created_at: DateTime!
+}
+
+extend type Query {
+    notifications: [AppNotification!]!
+        @field(resolver: "App\\Modules\\Notifications\\GraphQL\\Queries\\NotificationsQuery")
+        @guard
+
+    unreadNotificationsCount: Int!
+        @field(resolver: "App\\Modules\\Notifications\\GraphQL\\Queries\\UnreadCountQuery")
+        @guard
+}
+
+extend type Mutation {
+    markNotificationAsRead(id: ID!): AppNotification!
+        @field(resolver: "App\\Modules\\Notifications\\GraphQL\\Mutations\\MarkAsReadMutation")
+        @guard
+
+    markAllNotificationsAsRead: Boolean!
+        @field(resolver: "App\\Modules\\Notifications\\GraphQL\\Mutations\\MarkAllAsReadMutation")
+        @guard
+}
+
+extend type Subscription {
+    onNotificationReceived: AppNotification
+        @subscription(class: "App\\Modules\\Notifications\\GraphQL\\Subscriptions\\NotificationReceivedSubscription")
+        @guard
+}
