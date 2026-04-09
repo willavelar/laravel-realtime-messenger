@@ -1,7 +1,7 @@
 type AppNotification {
     id: ID!
     type: String!
-    data: String!
+    data: Mixed!
     read_at: DateTime
     created_at: DateTime!
 }

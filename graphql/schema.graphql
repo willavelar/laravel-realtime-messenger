@@ -1,6 +1,9 @@
 "A datetime string with format `Y-m-d H:i:s`."
 scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
 
+"Accepts any JSON-compatible value: object, array, string, number, boolean, or null."
+scalar Mixed @scalar(class: "App\\GraphQL\\Scalars\\MixedScalar")
+
 "Root query type."
 type Query
 
