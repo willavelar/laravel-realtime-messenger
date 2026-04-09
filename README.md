@@ -1,66 +1,331 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Real-Time Communication Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modular Laravel 11 monolith for real-time messaging with direct messages (DMs) and group conversations. Exposes a GraphQL API via [Lighthouse](https://lighthouse-php.com), delivers real-time events via [Laravel Reverb](https://reverb.laravel.com) (WebSocket), and sends push/email notifications through external services via a gRPC gateway.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Layer | Technology |
+|---|---|
+| Framework | Laravel 11 |
+| Authentication | Laravel Sanctum (API tokens) |
+| GraphQL API | Lighthouse 6 |
+| WebSocket | Laravel Reverb |
+| Queue / Cache | Redis |
+| Database | MySQL 8 (production), SQLite in-memory (tests) |
+| Push / Email gateway | gRPC (`grpc/grpc` + `google/protobuf`) |
+| Containerization | Docker + Docker Compose |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Architecture
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```
+┌─────────────────────────────────────────────────────┐
+│                   Client (Web/Mobile)                │
+│                                                      │
+│  GraphQL HTTP  ─────────────────────────────────┐   │
+│  GraphQL WS (Subscriptions) ──────────────┐     │   │
+│  WebSocket (Reverb) ───────────────────┐  │     │   │
+└───────────────────────────────────────┼──┼─────┘   │
+                                        │  │
+┌───────────────────────────────────────▼──▼──────────┐
+│                  Laravel Application                 │
+│                                                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐   │
+│  │  Module  │  │  Module  │  │      Module      │   │
+│  │   Auth   │  │   Chat   │  │  Notifications   │   │
+│  └──────────┘  └────┬─────┘  └────────┬─────────┘   │
+│                     │                 │              │
+│         ┌───────────▼─────────────────▼───────────┐  │
+│         │        Laravel Events / Queue (Redis)    │  │
+│         └────────────────────────────────────────┘  │
+│                                                      │
+│  ┌───────────────────────────────────────────────┐   │
+│  │        Laravel Reverb (WebSocket Server)      │   │
+│  └───────────────────────────────────────────────┘   │
+└─────────────────────────────────────────┬────────────┘
+                                          │ gRPC
+              ┌───────────────────────────▼───────────┐
+              │          External Services             │
+              │  Firebase FCM  │  Mailgun / SES        │
+              └────────────────────────────────────────┘
+```
 
-## Learning Laravel
+**Each layer's responsibility:**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **GraphQL HTTP** — queries and mutations (on-demand data)
+- **WebSocket (Reverb)** — real-time message and notification delivery
+- **GraphQL Subscriptions** — typed event streams for clients
+- **Redis Queue** — decouples notification processing from the request cycle
+- **gRPC** — outbound gateway to external push and email services (called from queue jobs, never in the request cycle)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Modules
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+app/Modules/
+├── Auth/          — register, login, logout (Sanctum tokens)
+├── Users/         — user profiles, online presence
+├── Chat/          — conversations (DM & group), messages, broadcasting
+└── Notifications/ — in-app notifications, push & email via gRPC
+```
 
-## Laravel Sponsors
+Each module owns its `Models/`, `Services/`, `GraphQL/`, `Events/`, `Jobs/`, and `Providers/`.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## GraphQL API
 
-### Premium Partners
+### Auth
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```graphql
+mutation Register {
+  register(input: {
+    name: "Alice"
+    email: "alice@example.com"
+    password: "secret123"
+    password_confirmation: "secret123"
+  }) {
+    token
+    user { id name email }
+  }
+}
 
-## Contributing
+mutation Login {
+  login(input: { email: "alice@example.com", password: "secret123" }) {
+    token
+    user { id email }
+  }
+}
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+mutation Logout {
+  logout  # requires Authorization: Bearer <token>
+}
+```
 
-## Code of Conduct
+### Chat
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```graphql
+# Create a DM or group conversation
+mutation { createDm(recipientId: "2") { id type } }
+mutation { createGroup(name: "Team Alpha", userIds: ["2", "3"]) { id name } }
 
-## Security Vulnerabilities
+# Send, edit, and delete messages
+mutation { sendMessage(conversationId: "1", body: "Hello!") { id body sender { name } } }
+mutation { editMessage(messageId: "5", body: "Hello, world!") { id body editedAt } }
+mutation { deleteMessage(messageId: "5") }
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Query a conversation with paginated messages
+query {
+  conversation(id: "1") {
+    id type
+    participants { id name isOnline }
+    messages(first: 20, page: 1) { id body sender { name } createdAt }
+  }
+}
+
+# Real-time subscription
+subscription {
+  onMessageReceived(conversationId: "1") {
+    id body sender { id name }
+  }
+}
+```
+
+### Notifications
+
+```graphql
+query { notifications { id type data readAt } }
+query { unreadNotificationsCount }
+
+mutation { markNotificationAsRead(id: "3") { id readAt } }
+mutation { markAllNotificationsAsRead }
+
+subscription {
+  onNotificationReceived {
+    id type data createdAt
+  }
+}
+```
+
+### Presence
+
+```graphql
+query { me { id name isOnline lastSeenAt } }
+
+subscription {
+  onUserPresenceChanged {
+    id name isOnline lastSeenAt
+  }
+}
+```
+
+## Real-Time Message Flow
+
+```
+1. Client  →  GraphQL mutation sendMessage(conversationId, body)
+2. ChatService persists Message in the database
+3. MessageSent event dispatched
+   └── Reverb broadcasts to private channel conversation.{id}
+       └── Connected clients receive the message instantly
+4. NotifyParticipants job enqueued in Redis
+5. Worker processes job:
+   ├── Persists AppNotification for each recipient
+   ├── Dispatches SendPushNotification job  →  gRPC → Firebase FCM
+   └── Dispatches SendEmailNotification job →  gRPC → Mailgun/SES
+       (only if recipient has been offline for more than 5 minutes)
+```
+
+## gRPC Notification Service
+
+The proto definition lives at `proto/notifications.proto`:
+
+```protobuf
+service NotificationService {
+  rpc SendPush(PushRequest)   returns (PushResponse);
+  rpc SendEmail(EmailRequest) returns (EmailResponse);
+}
+```
+
+The gateway is abstracted behind `NotificationGatewayInterface`, making it trivially swappable in tests (`FakeNotificationGateway`) and replaceable with any other implementation without touching the job logic.
+
+## Getting Started
+
+### Prerequisites
+
+- Docker and Docker Compose
+
+### Setup
+
+```bash
+git clone https://github.com/your-username/laravel-grpc-graphql-websocket.git
+cd laravel-grpc-graphql-websocket
+
+cp .env.example .env
+# Edit .env — set DB_ROOT_PASSWORD, DB_PASSWORD, and any other secrets
+
+docker compose up -d --build
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+
+The following services will be running:
+
+| Service | URL |
+|---|---|
+| GraphQL API | `http://localhost:8000/graphql` |
+| GraphQL Playground | `http://localhost:8000/graphql-playground` |
+| WebSocket (Reverb) | `ws://localhost:8080` |
+| MySQL | `localhost:3306` |
+| Redis | `localhost:6379` |
+
+### Running Tests
+
+Tests use SQLite in-memory — no external database required:
+
+```bash
+# Locally (requires PHP 8.2+ and Composer)
+php artisan test
+
+# Inside Docker
+docker compose exec app php artisan test
+```
+
+Expected output:
+
+```
+PASS  Tests\Unit\Chat\ChatServiceTest                      6 tests
+PASS  Tests\Unit\Notifications\NotifyParticipantsJobTest   3 tests
+PASS  Tests\Feature\Auth\AuthTest                          3 tests
+PASS  Tests\Feature\Chat\SendMessageTest                   1 test
+PASS  Tests\Feature\Notifications\NotificationTest         3 tests
+
+Tests: 16 passed (28 assertions)
+```
+
+### Regenerating gRPC Stubs
+
+The repository ships hand-written proto stubs under `app/Modules/Notifications/gRPC/Generated/` so local development works without the `grpc` PHP extension. Inside Docker (where the extension is installed), regenerate them from the proto definition:
+
+```bash
+docker compose exec app bash -c "
+  protoc --proto_path=proto \
+    --php_out=app/Modules/Notifications/gRPC/Generated \
+    --grpc_out=app/Modules/Notifications/gRPC/Generated \
+    --plugin=protoc-gen-grpc=\$(which grpc_php_plugin) \
+    proto/notifications.proto
+"
+```
+
+## Project Structure
+
+```
+app/
+  GraphQL/Scalars/MixedScalar.php         ← custom JSON scalar
+  Modules/
+    Auth/
+      Services/AuthService.php
+      GraphQL/Mutations/{Login,Register,Logout}Mutation.php
+      Providers/AuthServiceProvider.php
+    Users/
+      Models/User.php
+      Services/{UserService,PresenceService}.php
+      Events/{UserConnected,UserDisconnected}.php
+      GraphQL/Queries/MeQuery.php
+      GraphQL/Subscriptions/UserPresenceSubscription.php
+      Providers/UsersServiceProvider.php
+    Chat/
+      Models/{Conversation,ConversationParticipant,Message}.php
+      Services/{ChatService,ConversationService}.php
+      Events/MessageSent.php
+      Jobs/NotifyParticipants.php
+      Channels/ConversationChannel.php
+      GraphQL/{Queries,Mutations,Subscriptions}/...
+      Providers/ChatServiceProvider.php
+    Notifications/
+      Models/AppNotification.php
+      Services/NotificationService.php
+      Contracts/NotificationGatewayInterface.php
+      Gateways/{GrpcNotificationGateway,FakeNotificationGateway}.php
+      Jobs/{SendPushNotification,SendEmailNotification}.php
+      gRPC/Generated/...
+      GraphQL/{Queries,Mutations,Subscriptions}/...
+      Providers/NotificationsServiceProvider.php
+
+graphql/
+  schema.graphql         ← root schema (imports all modules)
+  auth.graphql
+  users.graphql
+  chat.graphql
+  notifications.graphql
+
+proto/
+  notifications.proto
+
+database/migrations/
+  *_create_users_table.php
+  *_create_conversations_table.php
+  *_create_conversation_participants_table.php
+  *_create_messages_table.php
+  *_create_app_notifications_table.php
+```
+
+## WebSocket Authentication
+
+Private channel access follows the standard Reverb/Pusher auth flow:
+
+```
+1. Client logs in  →  receives Sanctum token
+2. Client connects to WebSocket with token in the handshake
+3. Laravel authenticates via /broadcasting/auth
+4. Private channels (conversation.{id}) verify the user is a participant
+```
+
+## Error Handling
+
+| Layer | Strategy |
+|---|---|
+| GraphQL | Errors returned in the `errors[]` field; validation via `@rules` directives |
+| WebSocket | Auto-reconnect on client; private channels return 403 on unauthorized auth |
+| Queue jobs | `tries: 3`, `backoff: [10, 60, 300]` s; gateway failures throw to trigger retries |
+| gRPC | Per-call timeout; failures logged and retried via job backoff; never blocks message persistence |
+| Auth | Invalid token → 401 on both GraphQL and the broadcasting auth route |
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
