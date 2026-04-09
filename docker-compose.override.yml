@@ -3,12 +3,13 @@ services:
     volumes:
       - .:/var/www/html
       - /var/www/html/vendor
-
+  nginx:
+    volumes:
+      - .:/var/www/html:ro
   queue:
     volumes:
       - .:/var/www/html
       - /var/www/html/vendor
-
   reverb:
     volumes:
       - .:/var/www/html
