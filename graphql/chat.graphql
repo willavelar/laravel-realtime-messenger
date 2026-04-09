@@ -1,1 +1,51 @@
-# placeholder
+type Conversation {
+    id: ID!
+    type: String!
+    name: String
+    participants: [User!]! @hasMany
+    messages(first: Int = 20, page: Int): [Message!]! @hasMany @orderBy(column: "created_at", direction: DESC)
+    created_at: DateTime!
+}
+
+type Message {
+    id: ID!
+    conversation_id: ID!
+    body: String!
+    sender: User! @belongsTo(relation: "sender")
+    edited_at: DateTime
+    created_at: DateTime!
+}
+
+extend type Query {
+    conversation(id: ID!): Conversation
+        @field(resolver: "App\\Modules\\Chat\\GraphQL\\Queries\\ConversationQuery")
+        @guard
+}
+
+extend type Mutation {
+    createDm(recipientId: ID!): Conversation!
+        @field(resolver: "App\\Modules\\Chat\\GraphQL\\Mutations\\CreateDmMutation")
+        @guard
+
+    createGroup(name: String!, userIds: [ID!]!): Conversation!
+        @field(resolver: "App\\Modules\\Chat\\GraphQL\\Mutations\\CreateGroupMutation")
+        @guard
+
+    sendMessage(conversationId: ID!, body: String!): Message!
+        @field(resolver: "App\\Modules\\Chat\\GraphQL\\Mutations\\SendMessageMutation")
+        @guard
+
+    editMessage(messageId: ID!, body: String!): Message!
+        @field(resolver: "App\\Modules\\Chat\\GraphQL\\Mutations\\EditMessageMutation")
+        @guard
+
+    deleteMessage(messageId: ID!): Boolean!
+        @field(resolver: "App\\Modules\\Chat\\GraphQL\\Mutations\\DeleteMessageMutation")
+        @guard
+}
+
+extend type Subscription {
+    onMessageReceived(conversationId: ID!): Message
+        @subscription(class: "App\\Modules\\Chat\\GraphQL\\Subscriptions\\MessageReceivedSubscription")
+        @guard
+}
