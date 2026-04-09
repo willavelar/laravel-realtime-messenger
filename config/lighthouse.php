@@ -424,6 +424,14 @@ return [
         'broadcasts_queue_name' => env('LIGHTHOUSE_BROADCASTS_QUEUE_NAME', null),
 
         /*
+         * Queue configuration for subscription broadcasts.
+         */
+        'queue' => [
+            'connection' => env('QUEUE_CONNECTION', 'redis'),
+            'queue' => 'default',
+        ],
+
+        /*
          * Default subscription storage.
          *
          * Any Laravel supported cache driver options are available here.
