@@ -17,6 +17,11 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('avatar_url')->nullable();
+            $table->text('bio')->nullable();
+            $table->boolean('is_online')->default(false);
+            $table->timestamp('last_seen_at')->nullable();
+            $table->json('device_tokens')->nullable(); // FCM device tokens for push
             $table->rememberToken();
             $table->timestamps();
         });
