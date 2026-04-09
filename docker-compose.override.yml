@@ -1,0 +1,15 @@
+services:
+  app:
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+
+  queue:
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+
+  reverb:
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
