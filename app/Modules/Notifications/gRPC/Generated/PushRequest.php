@@ -7,7 +7,7 @@ class PushRequest
     private array $device_tokens = [];
     private string $title = '';
     private string $body = '';
-    private array $data = [];
+    /** @var array<string, string> */ private array $data = [];
 
     public function setDeviceTokens(array $var): static { $this->device_tokens = $var; return $this; }
     public function getDeviceTokens(): array { return $this->device_tokens; }

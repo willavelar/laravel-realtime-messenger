@@ -7,7 +7,7 @@ class EmailRequest
     private string $to = '';
     private string $subject = '';
     private string $template = '';
-    private array $variables = [];
+    /** @var array<string, string> */ private array $variables = [];
 
     public function setTo(string $var): static { $this->to = $var; return $this; }
     public function getTo(): string { return $this->to; }
