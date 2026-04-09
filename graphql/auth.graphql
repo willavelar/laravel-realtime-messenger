@@ -1,0 +1,28 @@
+type AuthPayload {
+    token: String!
+    user: User!
+}
+
+input RegisterInput {
+    name: String!
+    email: String! @rules(apply: ["email", "unique:users,email"])
+    password: String! @rules(apply: ["min:8", "confirmed"])
+    password_confirmation: String!
+}
+
+input LoginInput {
+    email: String!
+    password: String!
+}
+
+extend type Mutation {
+    register(input: RegisterInput! @spread): AuthPayload!
+        @field(resolver: "App\\Modules\\Auth\\GraphQL\\Mutations\\RegisterMutation")
+
+    login(input: LoginInput! @spread): AuthPayload!
+        @field(resolver: "App\\Modules\\Auth\\GraphQL\\Mutations\\LoginMutation")
+
+    logout: Boolean!
+        @field(resolver: "App\\Modules\\Auth\\GraphQL\\Mutations\\LogoutMutation")
+        @guard
+}
