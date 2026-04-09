@@ -47,4 +47,54 @@ class NotifyParticipantsJobTest extends TestCase
         Queue::assertPushed(SendPushNotification::class);
         Queue::assertPushed(SendEmailNotification::class);
     }
+
+    public function test_email_not_dispatched_when_user_recently_seen(): void
+    {
+        Queue::fake();
+
+        $sender = User::factory()->create(['is_online' => true]);
+        $receiver = User::factory()->create(['is_online' => false, 'last_seen_at' => now()->subMinutes(2)]);
+
+        $conversationService = new ConversationService();
+        $conversation = $conversationService->createDm($sender, $receiver);
+
+        $message = \App\Modules\Chat\Models\Message::create([
+            'conversation_id' => $conversation->id,
+            'user_id' => $sender->id,
+            'body' => 'Hello!',
+        ]);
+        $message->load('sender', 'conversation.participants');
+
+        (new NotifyParticipants($message))->handle(
+            app(\App\Modules\Notifications\Services\NotificationService::class)
+        );
+
+        Queue::assertPushed(SendPushNotification::class);
+        Queue::assertNotPushed(SendEmailNotification::class);
+    }
+
+    public function test_email_not_dispatched_when_user_is_online(): void
+    {
+        Queue::fake();
+
+        $sender = User::factory()->create(['is_online' => true]);
+        $receiver = User::factory()->create(['is_online' => true, 'last_seen_at' => now()]);
+
+        $conversationService = new ConversationService();
+        $conversation = $conversationService->createDm($sender, $receiver);
+
+        $message = \App\Modules\Chat\Models\Message::create([
+            'conversation_id' => $conversation->id,
+            'user_id' => $sender->id,
+            'body' => 'Hello!',
+        ]);
+        $message->load('sender', 'conversation.participants');
+
+        (new NotifyParticipants($message))->handle(
+            app(\App\Modules\Notifications\Services\NotificationService::class)
+        );
+
+        Queue::assertPushed(SendPushNotification::class);
+        Queue::assertNotPushed(SendEmailNotification::class);
+    }
 }
