@@ -13,7 +13,7 @@ class ConversationQuery
 
     public function __invoke(mixed $root, array $args, GraphQLContext $context): Conversation
     {
-        $conversation = Conversation::with(['participants', 'messages.sender'])
+        $conversation = Conversation::with(['participants'])
             ->findOrFail($args['id']);
 
         if (! $this->conversationService->isParticipant($conversation, $context->user())) {
