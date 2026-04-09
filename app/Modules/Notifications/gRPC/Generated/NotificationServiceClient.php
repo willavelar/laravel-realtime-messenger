@@ -34,6 +34,6 @@ class NotificationServiceClient
     protected function _simpleRequest(string $method, object $argument, array $deserialize, array $metadata = [], array $options = []): object
     {
         // Stub — real implementation provided by grpc extension via BaseStub
-        throw new \RuntimeException('gRPC extension not available. Use FakeNotificationGateway in tests.');
+        throw new \RuntimeException('NotificationServiceClient is a local stub. Run protoc inside Docker to regenerate real client files.');
     }
 }
